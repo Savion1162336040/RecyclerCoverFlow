@@ -6,6 +6,7 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.view.View;
@@ -492,6 +493,9 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
                 break;
             case RecyclerView.SCROLL_STATE_DRAGGING:
                 //拖拽滚动时
+                if (mSelectedListener != null) {
+                    mSelectedListener.onItemSelectStart();
+                }
                 break;
             case RecyclerView.SCROLL_STATE_SETTLING:
                 //动画滚动时
@@ -512,6 +516,9 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
         } else {
             layoutItems(mRecycle, mState, position > mSelectPosition ? SCROLL_TO_START : SCROLL_TO_END);
             onSelectedCallBack();
+            if (mSelectedListener != null) {
+                mSelectedListener.onItemSelectEnd();
+            }
         }
     }
 
@@ -685,6 +692,10 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
             int finalOffset = scrollN * getIntervalDistance();
             startScroll(mOffsetAll, finalOffset, smoothScrollDuration);
             mSelectPosition = Math.abs(Math.round(finalOffset * 1.0f / getIntervalDistance())) % getItemCount();
+        } else {
+            if (mSelectedListener != null) {
+                mSelectedListener.onItemSelectEnd();
+            }
         }
     }
 
@@ -703,9 +714,9 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
      * @desc 随机滚动到随机位置，指定动画时长
      **/
     public boolean randomSmoothScrollToPosition(long duration) {
-        int random = (int) (Math.random() * getItemCount());
+        int random = (int) (Math.random() * 50);
         //圈数总个数
-        int lapCount = 5 * getItemCount();
+        int lapCount = 50;
         int pos = mSelectPositionNature + lapCount + random;
         return randomSmoothScrollToPosition(duration, pos);
     }
@@ -743,9 +754,9 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
         mAnimation = ValueAnimator.ofFloat(from, to);
         mAnimation.setDuration(duration <= 0 ? 500 : duration);
         mAnimation.setInterpolator(interpolator != null ? interpolator : new DecelerateInterpolator());
-        mAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
+        mAnimation.addUpdateListener(animation -> {
+            Log.e("savion","coverFlowLayout render:"+destoryed);
+            if (!destoryed) {
                 mOffsetAll = Math.round((float) animation.getAnimatedValue());
                 layoutItems(mRecycle, mState, direction);
             }
@@ -756,11 +767,17 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
                 if (lockGesture) {
                     enableGesture = false;
                 }
+                if (mSelectedListener != null) {
+                    mSelectedListener.onItemSelectStart();
+                }
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
                 onSelectedCallBack();
+                if (mSelectedListener != null) {
+                    mSelectedListener.onItemSelectEnd();
+                }
                 if (lockGesture) {
                     enableGesture = true;
                 }
@@ -796,7 +813,7 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
     private void onSelectedCallBack() {
         mSelectPositionNature = Math.round(mOffsetAll / getIntervalDistance());
         mSelectPosition = mSelectPositionNature;
-        mSelectPosition = Math.abs(mSelectPosition % getItemCount());
+        mSelectPosition = mSelectPosition < 0 ? (getItemCount() + (mSelectPosition % getItemCount())) : Math.abs(mSelectPosition % getItemCount());
         if (mSelectedListener != null && mSelectPosition != mLastSelectPosition) {
             mSelectedListener.onItemSelected(mSelectPosition);
         }
@@ -912,7 +929,11 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
         return mSelectPositionNature;
     }
 
+    private boolean destoryed = false;
+
     public void onDestory() {
+        Log.e("savion","coverFlowLayout render destory:"+destoryed);
+        destoryed = true;
         if (mAnimation != null) {
             mAnimation.cancel();
         }
@@ -928,6 +949,22 @@ public class CoverFlowLayoutManger extends RecyclerView.LayoutManager {
          * @param position 显示在中间的Item的位置
          */
         void onItemSelected(int position);
+
+        /**
+         * @author savion
+         * @date 2022/1/20
+         * @desc
+         **/
+        default void onItemSelectStart() {
+        }
+
+        /**
+         * @author savion
+         * @date 2022/1/20
+         * @desc 滑动结束
+         **/
+        default void onItemSelectEnd() {
+        }
     }
 
     private class TAG {

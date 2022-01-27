@@ -1,7 +1,15 @@
 plugins {
     id 'com.android.library'
 }
-
+ext {
+    //你的sonatype的group_id
+    PUBLISH_GROUP_ID = "io.github.Savion1162336040"
+    //你的artifact_id，一般是module的名字
+    PUBLISH_ARTIFACT_ID = 'corverflow'
+    //发布版本号
+    PUBLISH_VERSION = '1.0.0'
+}
+apply from: '../maven_publish.gradle'
 android {
     compileSdkVersion 30
 
