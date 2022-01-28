@@ -19,7 +19,7 @@ allprojects {
 ### 将此依赖项添加到您的应用级build.gradle文件里
 ```
 dependencies {
-        implementation 'com.github.Savion1162336040:RecyclerCoverFlow:Tag'
+    implementation 'com.github.Savion1162336040:RecyclerCoverFlow:1.0'
 }
 ```
 
